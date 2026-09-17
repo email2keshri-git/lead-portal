@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import sqlite3
+import os
 
 app = FastAPI()
 
-# Allow the frontend browser page to talk to this server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,7 +14,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Initialize the SQLite database table on startup
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -30,24 +30,28 @@ def init_db():
 
 init_db()
 
-# Data schema for incoming submissions
 class Inquiry(BaseModel):
     name: str
     email: str
     message: str
 
-# 2. API Endpoint to receive and save submissions
+# Serve the HTML page directly when opening the root URL
+@app.get("/")
+def serve_home():
+    return FileResponse("index.html")
+
 @app.post("/inquiries")
 def create_inquiry(item: Inquiry):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO inquiries (name, email, message) VALUES (?, ?, ?)", 
-                   (item.name, item.email, item.message))
+    cursor.execute(
+        "INSERT INTO inquiries (name, email, message) VALUES (?, ?, ?)", 
+        (item.name, item.email, item.message)
+    )
     conn.commit()
     conn.close()
     return {"status": "success"}
 
-# 3. API Endpoint to return all saved records
 @app.get("/inquiries")
 def get_inquiries():
     conn = sqlite3.connect("database.db")
