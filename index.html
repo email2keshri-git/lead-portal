@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inquiry Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen py-10 px-4">
+  <div class="max-w-xl mx-auto space-y-8">
+    
+    <!-- Submission Form -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <h2 class="text-xl font-bold text-slate-800 mb-4">Submit Inquiry</h2>
+      <form id="inquiryForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Full Name</label>
+          <input type="text" id="name" required class="mt-1 w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Email Address</label>
+          <input type="email" id="email" required class="mt-1 w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Message / Requirement</label>
+          <textarea id="message" rows="3" required class="mt-1 w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition">Save Inquiry</button>
+      </form>
+      <p id="statusMsg" class="mt-3 text-sm text-center hidden"></p>
+    </div>
+
+    <!-- Live Records Display -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <h3 class="text-lg font-bold text-slate-800 mb-3">Saved Submissions (Live from DB)</h3>
+      <ul id="recordsList" class="divide-y divide-slate-100 text-sm text-slate-600">
+        <li class="py-2 text-slate-400">Loading records...</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    const form = document.getElementById('inquiryForm');
+    const recordsList = document.getElementById('recordsList');
+    const statusMsg = document.getElementById('statusMsg');
+
+    // Fetch existing records from backend
+    async function loadRecords() {
+      const res = await fetch('/inquiries');
+      const data = await res.json();
+      recordsList.innerHTML = '';
+      if (data.length === 0) {
+        recordsList.innerHTML = '<li class="py-2 text-slate-400">No submissions yet.</li>';
+        return;
+      }
+      data.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'py-3';
+        li.innerHTML = `<span class="font-semibold text-slate-800">${item.name}</span> (${item.email}): <br><span class="text-slate-500">${item.message}</span>`;
+        recordsList.appendChild(li);
+      });
+    }
+
+    // Submit form to backend
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        message: document.getElementById('message').value
+      };
+
+      const res = await fetch('/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        form.reset();
+        statusMsg.textContent = 'Saved successfully!';
+        statusMsg.className = 'mt-3 text-sm text-center text-green-600';
+        statusMsg.classList.remove('hidden');
+        loadRecords();
+      }
+    });
+
+    loadRecords();
+  </script>
+</body>
+</html>
